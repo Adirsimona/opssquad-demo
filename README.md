@@ -361,11 +361,24 @@ Each scenario activates specific bugs in the services. Only one scenario can run
 
 ## OpsSquad Integration
 
-OpsSquad nodes can be easily installed on all containers using a simple JSON configuration file.
+OpsSquad nodes can be deployed to all containers using a simple JSON configuration file. The installation script automatically installs the OpsSquad CLI on each container using:
 
-### Quick Setup (Recommended)
+```bash
+curl -fsSL https://install.opssquad.ai/install.sh | bash
+```
 
-**Step 1:** Start the demo environment first:
+### How It Works
+
+1. You create a `nodes.json` file with your node credentials from the OpsSquad dashboard
+2. The `install-nodes.sh` script reads this configuration
+3. For each enabled node, it:
+   - Installs the OpsSquad CLI inside the container
+   - Runs `opssquad node install --node-id=<id> --token=<token>`
+   - Starts the node process
+
+### Quick Setup
+
+**Step 1:** Start the demo environment:
 ```bash
 ./scripts/start-demo.sh memory-leak
 ```
@@ -375,58 +388,53 @@ OpsSquad nodes can be easily installed on all containers using a simple JSON con
 cp nodes.example.json nodes.json
 ```
 
-**Step 3:** Edit `nodes.json` with your credentials from the OpsSquad dashboard:
+**Step 3:** Get your credentials from the OpsSquad dashboard:
+- Create nodes for each service in the OpsSquad dashboard
+- Copy the **Node ID** and **Token** for each node
+
+**Step 4:** Edit `nodes.json` with your credentials:
 ```json
 {
   "global": {
-    "token": "your-actual-token"
+    "token": "fp_your_token_here"
   },
   "nodes": [
     {
       "name": "API Gateway",
       "container": "fintech-api-gateway",
-      "node_id": "paste-node-id-from-dashboard",
+      "node_id": "node_abc123",
       "enabled": true
     },
-    ...
-  ]
-}
-```
-
-**Step 4:** Install nodes on all containers with a single command:
-```bash
-./scripts/install-nodes.sh
-```
-
-That's it! All nodes will be installed and started automatically.
-
-### Node Configuration Format
-
-The `nodes.json` file structure:
-
-```json
-{
-  "global": {
-    "token": "your-opssquad-token",
-    "socket_url": "socket.opssquad.ai:9000"
-  },
-  "nodes": [
     {
-      "name": "Service Name",
-      "container": "docker-container-name",
-      "node_id": "uuid-from-dashboard",
+      "name": "Auth Service",
+      "container": "fintech-auth-service",
+      "node_id": "node_def456",
       "enabled": true
     }
   ]
 }
 ```
 
+**Step 5:** Deploy nodes to all containers:
+```bash
+./scripts/install-nodes.sh
+```
+
+The script will show progress for each container:
+```
+✓ API Gateway (fintech-api-gateway): Node installed and running
+✓ Auth Service (fintech-auth-service): Node installed and running
+...
+```
+
+### Node Configuration Reference
+
 | Field | Description |
 |-------|-------------|
 | `global.token` | Your OpsSquad token (shared across all nodes) |
-| `global.socket_url` | OpsSquad socket server URL |
+| `global.socket_url` | Socket server URL (default: `socket.opssquad.ai:9000`) |
 | `nodes[].name` | Display name for the service |
-| `nodes[].container` | Docker container name to install node on |
+| `nodes[].container` | Docker container name to deploy to |
 | `nodes[].node_id` | Node ID from OpsSquad dashboard |
 | `nodes[].enabled` | Set to `false` to skip this node |
 
@@ -440,24 +448,33 @@ The `nodes.json` file structure:
 | `./scripts/stop-nodes.sh` | Stop all running nodes |
 | `./scripts/uninstall-nodes.sh` | Completely remove nodes from all containers |
 
-### Example Workflow for Demo
+### Complete Demo Workflow
 
 ```bash
 # 1. Start the demo with a scenario
 ./scripts/start-demo.sh memory-leak
 
-# 2. Configure and install nodes (first time only)
+# 2. Configure nodes (first time only)
 cp nodes.example.json nodes.json
-# Edit nodes.json with your credentials
+# Edit nodes.json with your credentials from OpsSquad dashboard
+
+# 3. Deploy nodes to all containers
 ./scripts/install-nodes.sh
 
-# 3. Verify nodes are running
+# 4. Verify nodes are running
 ./scripts/check-nodes.sh
 
-# 4. Generate traffic to trigger the issue
+# 5. Generate traffic to trigger the issue
 ./scripts/traffic-generator.sh 300 10
 
-# 5. Use OpsSquad to investigate!
+# 6. Use OpsSquad to investigate the incident!
+```
+
+### Viewing Node Logs
+
+To view logs for a specific node:
+```bash
+docker exec fintech-api-gateway tail -f /var/log/opssquad-node.log
 ```
 
 ### Agent System Prompts

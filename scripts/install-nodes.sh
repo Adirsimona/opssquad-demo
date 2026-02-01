@@ -36,7 +36,7 @@ if [ ! -f "$CONFIG_FILE" ]; then
     echo ""
     echo "To get started:"
     echo "  1. Copy nodes.example.json to nodes.json"
-    echo "  2. Fill in your node IDs and API key from the OpsSquad dashboard"
+    echo "  2. Fill in your node IDs and token from the OpsSquad dashboard"
     echo "  3. Run this script again"
     echo ""
     echo "Example:"
