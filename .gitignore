@@ -1,0 +1,29 @@
+# OpsSquad agent configuration (contains secrets)
+nodes.json
+
+# Environment files with secrets
+.env
+
+# Node modules (if running dashboard locally)
+node_modules/
+dashboard/node_modules/
+
+# Build outputs
+dashboard/dist/
+
+# Logs
+*.log
+logs/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Docker volumes (local development)
+data/

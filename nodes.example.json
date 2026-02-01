@@ -1,0 +1,54 @@
+{
+  "description": "OpsSquad Agent Configuration for FinTech Demo",
+  "instructions": "Copy this file to nodes.json and fill in your agent IDs and API keys from the OpsSquad dashboard",
+
+  "global": {
+    "api_key": "your-opssquad-api-key-here",
+    "socket_url": "socket.opssquad.ai:9000"
+  },
+
+  "nodes": [
+    {
+      "name": "API Gateway",
+      "container": "fintech-api-gateway",
+      "agent_id": "",
+      "enabled": true
+    },
+    {
+      "name": "Auth Service",
+      "container": "fintech-auth-service",
+      "agent_id": "",
+      "enabled": true
+    },
+    {
+      "name": "Account Service",
+      "container": "fintech-account-service",
+      "agent_id": "",
+      "enabled": true
+    },
+    {
+      "name": "Transaction Service",
+      "container": "fintech-transaction-service",
+      "agent_id": "",
+      "enabled": true
+    },
+    {
+      "name": "Fraud Detection",
+      "container": "fintech-fraud-detection",
+      "agent_id": "",
+      "enabled": true
+    },
+    {
+      "name": "Notification Service",
+      "container": "fintech-notification-service",
+      "agent_id": "",
+      "enabled": true
+    },
+    {
+      "name": "Payment Processor",
+      "container": "fintech-payment-processor",
+      "agent_id": "",
+      "enabled": true
+    }
+  ]
+}

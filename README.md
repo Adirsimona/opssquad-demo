@@ -361,38 +361,104 @@ Each scenario activates specific bugs in the services. Only one scenario can run
 
 ## OpsSquad Integration
 
-Each service automatically installs and starts the OpsSquad agent when credentials are provided.
+OpsSquad agents can be easily installed on all containers using a simple JSON configuration file.
 
-### Setup
+### Quick Setup (Recommended)
 
-1. Copy the environment template:
-   ```bash
-   cp .env.example .env
-   ```
+**Step 1:** Start the demo environment first:
+```bash
+./scripts/start-demo.sh memory-leak
+```
 
-2. Edit `.env` with your OpsSquad credentials:
-   ```bash
-   OPSSQUAD_API_KEY=your-api-key-here
+**Step 2:** Create your node configuration:
+```bash
+cp nodes.example.json nodes.json
+```
 
-   # Optional: Use different agent IDs per service
-   API_GATEWAY_AGENT_ID=uuid-1
-   AUTH_SERVICE_AGENT_ID=uuid-2
-   ACCOUNT_SERVICE_AGENT_ID=uuid-3
-   # ... etc
-   ```
+**Step 3:** Edit `nodes.json` with your credentials from the OpsSquad dashboard:
+```json
+{
+  "global": {
+    "api_key": "your-actual-api-key"
+  },
+  "nodes": [
+    {
+      "name": "API Gateway",
+      "container": "fintech-api-gateway",
+      "agent_id": "paste-agent-id-from-dashboard",
+      "enabled": true
+    },
+    ...
+  ]
+}
+```
 
-3. Start the demo:
-   ```bash
-   ./scripts/start-demo.sh memory-leak
-   ```
+**Step 4:** Install agents on all containers with a single command:
+```bash
+./scripts/install-agents.sh
+```
 
-### Agent Behavior
+That's it! All agents will be installed and started automatically.
 
-On container startup, each service:
-1. Downloads the OpsSquad CLI from `install.fixpanic.com`
-2. Runs `fixpanic agent install` with provided credentials
-3. Starts the connectivity layer agent in background
-4. Then starts the main application
+### Node Configuration Format
+
+The `nodes.json` file structure:
+
+```json
+{
+  "global": {
+    "api_key": "your-opssquad-api-key",
+    "socket_url": "socket.opssquad.ai:9000"
+  },
+  "nodes": [
+    {
+      "name": "Service Name",
+      "container": "docker-container-name",
+      "agent_id": "uuid-from-dashboard",
+      "enabled": true
+    }
+  ]
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| `global.api_key` | Your OpsSquad API key (shared across all nodes) |
+| `global.socket_url` | OpsSquad socket server URL |
+| `nodes[].name` | Display name for the service |
+| `nodes[].container` | Docker container name to install agent on |
+| `nodes[].agent_id` | Agent ID from OpsSquad dashboard |
+| `nodes[].enabled` | Set to `false` to skip this node |
+
+### Agent Management Scripts
+
+| Script | Description |
+|--------|-------------|
+| `./scripts/install-agents.sh` | Install and start agents on all configured containers |
+| `./scripts/check-agents.sh` | Check status of all agents (running/stopped/not installed) |
+| `./scripts/start-agents.sh` | Start agents that are installed but not running |
+| `./scripts/stop-agents.sh` | Stop all running agents |
+| `./scripts/uninstall-agents.sh` | Completely remove agents from all containers |
+
+### Example Workflow for Demo
+
+```bash
+# 1. Start the demo with a scenario
+./scripts/start-demo.sh memory-leak
+
+# 2. Configure and install agents (first time only)
+cp nodes.example.json nodes.json
+# Edit nodes.json with your credentials
+./scripts/install-agents.sh
+
+# 3. Verify agents are running
+./scripts/check-agents.sh
+
+# 4. Generate traffic to trigger the issue
+./scripts/traffic-generator.sh 300 10
+
+# 5. Use OpsSquad to investigate!
+```
 
 ### Agent System Prompts
 
@@ -402,44 +468,41 @@ Service-specific investigation guidance is in `/prompts/agents/`. These can be u
 
 ## Scripts
 
-### start-demo.sh
-```bash
-./scripts/start-demo.sh [scenario]
-```
-Starts the demo environment. Optional scenario name activates that incident.
+### Demo Management
 
-### stop-demo.sh
-```bash
-./scripts/stop-demo.sh
-```
-Stops all containers gracefully.
+| Script | Usage | Description |
+|--------|-------|-------------|
+| `start-demo.sh` | `./scripts/start-demo.sh [scenario]` | Start demo with optional scenario |
+| `stop-demo.sh` | `./scripts/stop-demo.sh` | Stop all containers |
+| `reset-demo.sh` | `./scripts/reset-demo.sh` | Full cleanup (volumes, images) |
 
-### reset-demo.sh
-```bash
-./scripts/reset-demo.sh
-```
-Full cleanup: stops containers, removes volumes, deletes images.
+### Agent Management
 
-### traffic-generator.sh
+| Script | Usage | Description |
+|--------|-------|-------------|
+| `install-agents.sh` | `./scripts/install-agents.sh` | Install agents from nodes.json |
+| `check-agents.sh` | `./scripts/check-agents.sh` | Check agent status |
+| `start-agents.sh` | `./scripts/start-agents.sh` | Start stopped agents |
+| `stop-agents.sh` | `./scripts/stop-agents.sh` | Stop running agents |
+| `uninstall-agents.sh` | `./scripts/uninstall-agents.sh` | Remove agents |
+
+### Traffic & Monitoring
+
+| Script | Usage | Description |
+|--------|-------|-------------|
+| `traffic-generator.sh` | `./scripts/traffic-generator.sh [duration] [rate]` | Generate load |
+| `monitor-health.sh` | `./scripts/monitor-health.sh` | Real-time health dashboard |
+
+### traffic-generator.sh Details
 ```bash
 ./scripts/traffic-generator.sh [duration_seconds] [requests_per_second]
 ```
-Generates realistic traffic to trigger issues:
+Generates realistic traffic:
 - 30% balance checks (triggers memory/db leak)
 - 20% health checks
 - 20% account listings
 - 15% token verifications (triggers auth failures)
 - 15% transfers (triggers cascade timeout, queue backlog)
-
-### monitor-health.sh
-```bash
-./scripts/monitor-health.sh
-```
-Real-time terminal dashboard showing:
-- Service health status
-- Active issues
-- Container resource usage
-- RabbitMQ queue depth
 
 ---
 
