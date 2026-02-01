@@ -1,0 +1,15 @@
+# Memory Leak Scenario Overlay
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.memory-leak.yml up -d
+#
+# Symptom: Account service memory grows 5MB/min until OOM (256MB limit)
+# Root Cause: Unbounded array in balance endpoint leaks memory
+
+services:
+  account-service:
+    environment:
+      - ENABLE_MEMORY_LEAK=true
+      - MEMORY_LEAK_RATE_MB=5
+    deploy:
+      resources:
+        limits:
+          memory: 256M

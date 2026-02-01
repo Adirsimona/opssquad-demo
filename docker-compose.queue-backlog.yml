@@ -1,0 +1,17 @@
+# Message Queue Backlog Scenario Overlay
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.queue-backlog.yml up -d
+#
+# Symptom: Notification queue grows unboundedly, delayed notifications
+# Root Cause: Notification service processes messages too slowly (5s per message)
+
+services:
+  notification-service:
+    environment:
+      - ENABLE_SLOW_CONSUMER=true
+      - CONSUMER_DELAY_MS=5000
+
+  rabbitmq:
+    deploy:
+      resources:
+        limits:
+          memory: 128M

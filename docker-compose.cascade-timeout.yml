@@ -1,0 +1,21 @@
+# Cascading Timeout Scenario Overlay
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.cascade-timeout.yml up -d
+#
+# Symptom: 504 Gateway Timeout on payments
+# Root Cause: Payment (10s) + Fraud (8s) services too slow, cascade timeout
+
+services:
+  payment-processor:
+    environment:
+      - ENABLE_SLOW_PAYMENTS=true
+      - PAYMENT_DELAY_MS=10000
+
+  fraud-detection:
+    environment:
+      - ENABLE_SLOW_SCORING=true
+      - SCORING_DELAY_MS=8000
+
+  transaction-service:
+    environment:
+      - ENABLE_CASCADE_TIMEOUT=true
+      - DOWNSTREAM_TIMEOUT_MS=5000

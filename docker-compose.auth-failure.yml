@@ -1,0 +1,19 @@
+# Authentication Failure Scenario Overlay
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.auth-failure.yml up -d
+#
+# Symptom: Intermittent 401 errors, users randomly logged out
+# Root Cause: Token verification failures (30%) + Redis evicting sessions (low memory)
+
+services:
+  auth-service:
+    environment:
+      - ENABLE_TOKEN_FAILURE=true
+      - TOKEN_FAILURE_RATE=0.3
+
+  redis:
+    deploy:
+      resources:
+        limits:
+          memory: 32M
+    environment:
+      - REDIS_MEMORY_LIMIT=32M

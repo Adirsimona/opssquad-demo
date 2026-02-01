@@ -1,0 +1,14 @@
+# Database Connection Exhaustion Scenario Overlay
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.db-exhaustion.yml up -d
+#
+# Symptom: "too many connections" errors, all DB-dependent services fail
+# Root Cause: Missing pool.release() calls in account-service
+
+services:
+  postgres:
+    environment:
+      - POSTGRES_MAX_CONNECTIONS=20
+
+  account-service:
+    environment:
+      - ENABLE_CONNECTION_LEAK=true

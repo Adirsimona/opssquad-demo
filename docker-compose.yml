@@ -1,0 +1,443 @@
+# FinTech Demo Environment - Base Configuration (Healthy State)
+# This simulates a banking platform for OpsSquad demos
+
+volumes:
+  postgres_data:
+  redis_data:
+  rabbitmq_data:
+  prometheus_data:
+
+networks:
+  fintech-net:
+    driver: bridge
+
+services:
+  # =============================================================================
+  # API Gateway (nginx)
+  # =============================================================================
+  api-gateway:
+    build:
+      context: ./services/api-gateway
+      dockerfile: Dockerfile
+    container_name: fintech-api-gateway
+    ports:
+      - "8080:80"
+    environment:
+      - OPSSQUAD_AGENT_ID=${API_GATEWAY_AGENT_ID:-}
+      - OPSSQUAD_API_KEY=${OPSSQUAD_API_KEY:-}
+    depends_on:
+      - auth-service
+      - account-service
+      - transaction-service
+      - fraud-detection
+      - notification-service
+    cap_add:
+      - SYS_PTRACE
+      - SYS_ADMIN
+    security_opt:
+      - seccomp:unconfined
+    networks:
+      - fintech-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # =============================================================================
+  # Auth Service - JWT Authentication
+  # =============================================================================
+  auth-service:
+    build:
+      context: ./services/auth-service
+      dockerfile: Dockerfile
+    container_name: fintech-auth-service
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - SERVICE_NAME=auth-service
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=fintech-demo-secret-key-change-in-production
+      - JWT_EXPIRY=3600
+      # Issue simulation flags
+      - ENABLE_TOKEN_FAILURE=${ENABLE_TOKEN_FAILURE:-false}
+      - TOKEN_FAILURE_RATE=${TOKEN_FAILURE_RATE:-0.3}
+      # OpsSquad Agent
+      - OPSSQUAD_AGENT_ID=${AUTH_SERVICE_AGENT_ID:-}
+      - OPSSQUAD_API_KEY=${OPSSQUAD_API_KEY:-}
+    depends_on:
+      - redis
+    cap_add:
+      - SYS_PTRACE
+      - SYS_ADMIN
+    security_opt:
+      - seccomp:unconfined
+    networks:
+      - fintech-net
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # =============================================================================
+  # Account Service - Account CRUD Operations
+  # =============================================================================
+  account-service:
+    build:
+      context: ./services/account-service
+      dockerfile: Dockerfile
+    container_name: fintech-account-service
+    ports:
+      - "3002:3002"
+    environment:
+      - NODE_ENV=production
+      - PORT=3002
+      - SERVICE_NAME=account-service
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=fintech
+      - DB_USER=fintech
+      - DB_PASSWORD=fintech123
+      - REDIS_URL=redis://redis:6379
+      # Issue simulation flags
+      - ENABLE_MEMORY_LEAK=${ENABLE_MEMORY_LEAK:-false}
+      - MEMORY_LEAK_RATE_MB=${MEMORY_LEAK_RATE_MB:-5}
+      - ENABLE_CONNECTION_LEAK=${ENABLE_CONNECTION_LEAK:-false}
+      # OpsSquad Agent
+      - OPSSQUAD_AGENT_ID=${ACCOUNT_SERVICE_AGENT_ID:-}
+      - OPSSQUAD_API_KEY=${OPSSQUAD_API_KEY:-}
+    depends_on:
+      - postgres
+      - redis
+    cap_add:
+      - SYS_PTRACE
+      - SYS_ADMIN
+    security_opt:
+      - seccomp:unconfined
+    networks:
+      - fintech-net
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3002/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # =============================================================================
+  # Transaction Service - Transfers and Payments
+  # =============================================================================
+  transaction-service:
+    build:
+      context: ./services/transaction-service
+      dockerfile: Dockerfile
+    container_name: fintech-transaction-service
+    ports:
+      - "3003:3003"
+    environment:
+      - NODE_ENV=production
+      - PORT=3003
+      - SERVICE_NAME=transaction-service
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=fintech
+      - DB_USER=fintech
+      - DB_PASSWORD=fintech123
+      - REDIS_URL=redis://redis:6379
+      - RABBITMQ_URL=amqp://fintech:fintech123@rabbitmq:5672
+      - FRAUD_SERVICE_URL=http://fraud-detection:3004
+      - PAYMENT_SERVICE_URL=http://payment-processor:3006
+      # Issue simulation flags
+      - ENABLE_CASCADE_TIMEOUT=${ENABLE_CASCADE_TIMEOUT:-false}
+      - DOWNSTREAM_TIMEOUT_MS=${DOWNSTREAM_TIMEOUT_MS:-5000}
+      # OpsSquad Agent
+      - OPSSQUAD_AGENT_ID=${TRANSACTION_SERVICE_AGENT_ID:-}
+      - OPSSQUAD_API_KEY=${OPSSQUAD_API_KEY:-}
+    depends_on:
+      - postgres
+      - redis
+      - rabbitmq
+      - fraud-detection
+      - payment-processor
+    cap_add:
+      - SYS_PTRACE
+      - SYS_ADMIN
+    security_opt:
+      - seccomp:unconfined
+    networks:
+      - fintech-net
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3003/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # =============================================================================
+  # Fraud Detection Service - ML Scoring Mock (Python/FastAPI)
+  # =============================================================================
+  fraud-detection:
+    build:
+      context: ./services/fraud-detection
+      dockerfile: Dockerfile
+    container_name: fintech-fraud-detection
+    ports:
+      - "3004:3004"
+    environment:
+      - PORT=3004
+      - SERVICE_NAME=fraud-detection
+      - REDIS_URL=redis://redis:6379
+      # Issue simulation flags
+      - ENABLE_SLOW_SCORING=${ENABLE_SLOW_SCORING:-false}
+      - SCORING_DELAY_MS=${SCORING_DELAY_MS:-8000}
+      # OpsSquad Agent
+      - OPSSQUAD_AGENT_ID=${FRAUD_SERVICE_AGENT_ID:-}
+      - OPSSQUAD_API_KEY=${OPSSQUAD_API_KEY:-}
+    depends_on:
+      - redis
+    cap_add:
+      - SYS_PTRACE
+      - SYS_ADMIN
+    security_opt:
+      - seccomp:unconfined
+    networks:
+      - fintech-net
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3004/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # =============================================================================
+  # Notification Service - Queue Consumer
+  # =============================================================================
+  notification-service:
+    build:
+      context: ./services/notification-service
+      dockerfile: Dockerfile
+    container_name: fintech-notification-service
+    ports:
+      - "3005:3005"
+    environment:
+      - NODE_ENV=production
+      - PORT=3005
+      - SERVICE_NAME=notification-service
+      - RABBITMQ_URL=amqp://fintech:fintech123@rabbitmq:5672
+      - REDIS_URL=redis://redis:6379
+      # Issue simulation flags
+      - ENABLE_SLOW_CONSUMER=${ENABLE_SLOW_CONSUMER:-false}
+      - CONSUMER_DELAY_MS=${CONSUMER_DELAY_MS:-5000}
+      # OpsSquad Agent
+      - OPSSQUAD_AGENT_ID=${NOTIFICATION_SERVICE_AGENT_ID:-}
+      - OPSSQUAD_API_KEY=${OPSSQUAD_API_KEY:-}
+    depends_on:
+      - rabbitmq
+      - redis
+    cap_add:
+      - SYS_PTRACE
+      - SYS_ADMIN
+    security_opt:
+      - seccomp:unconfined
+    networks:
+      - fintech-net
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3005/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # =============================================================================
+  # Payment Processor - External Service Mock
+  # =============================================================================
+  payment-processor:
+    build:
+      context: ./services/payment-processor
+      dockerfile: Dockerfile
+    container_name: fintech-payment-processor
+    ports:
+      - "3006:3006"
+    environment:
+      - NODE_ENV=production
+      - PORT=3006
+      - SERVICE_NAME=payment-processor
+      # Issue simulation flags
+      - ENABLE_SLOW_PAYMENTS=${ENABLE_SLOW_PAYMENTS:-false}
+      - PAYMENT_DELAY_MS=${PAYMENT_DELAY_MS:-10000}
+      - ENABLE_PAYMENT_FAILURES=${ENABLE_PAYMENT_FAILURES:-false}
+      - PAYMENT_FAILURE_RATE=${PAYMENT_FAILURE_RATE:-0.2}
+      # OpsSquad Agent
+      - OPSSQUAD_AGENT_ID=${PAYMENT_SERVICE_AGENT_ID:-}
+      - OPSSQUAD_API_KEY=${OPSSQUAD_API_KEY:-}
+    cap_add:
+      - SYS_PTRACE
+      - SYS_ADMIN
+    security_opt:
+      - seccomp:unconfined
+    networks:
+      - fintech-net
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.3'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3006/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # =============================================================================
+  # Infrastructure: PostgreSQL
+  # =============================================================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: fintech-postgres
+    environment:
+      - POSTGRES_DB=fintech
+      - POSTGRES_USER=fintech
+      - POSTGRES_PASSWORD=fintech123
+      - POSTGRES_MAX_CONNECTIONS=${POSTGRES_MAX_CONNECTIONS:-100}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infrastructure/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    cap_add:
+      - SYS_PTRACE
+      - SYS_ADMIN
+    security_opt:
+      - seccomp:unconfined
+    networks:
+      - fintech-net
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fintech -d fintech"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # =============================================================================
+  # Infrastructure: Redis
+  # =============================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: fintech-redis
+    command: redis-server /usr/local/etc/redis/redis.conf
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+      - ./infrastructure/redis/redis.conf:/usr/local/etc/redis/redis.conf
+    cap_add:
+      - SYS_PTRACE
+      - SYS_ADMIN
+    security_opt:
+      - seccomp:unconfined
+    networks:
+      - fintech-net
+    deploy:
+      resources:
+        limits:
+          memory: ${REDIS_MEMORY_LIMIT:-128M}
+          cpus: '0.3'
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # =============================================================================
+  # Infrastructure: RabbitMQ
+  # =============================================================================
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: fintech-rabbitmq
+    environment:
+      - RABBITMQ_DEFAULT_USER=fintech
+      - RABBITMQ_DEFAULT_PASS=fintech123
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+      - ./infrastructure/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
+    cap_add:
+      - SYS_PTRACE
+      - SYS_ADMIN
+    security_opt:
+      - seccomp:unconfined
+    networks:
+      - fintech-net
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # =============================================================================
+  # Monitoring: Prometheus
+  # =============================================================================
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: fintech-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./infrastructure/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    networks:
+      - fintech-net
+
+  # =============================================================================
+  # Dashboard (React + Vite)
+  # =============================================================================
+  dashboard:
+    build:
+      context: ./dashboard
+      dockerfile: Dockerfile
+    container_name: fintech-dashboard
+    ports:
+      - "3000:3000"
+    environment:
+      - VITE_API_URL=http://localhost:8080
+    networks:
+      - fintech-net
+    depends_on:
+      - api-gateway

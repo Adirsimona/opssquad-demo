@@ -1,0 +1,13 @@
+# Payment Processing Slowdown Scenario Overlay
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.payment-slow.yml up -d
+#
+# Symptom: 80% payment success rate, 5s average latency
+# Root Cause: External payment service degraded (20% failures + 5s delays)
+
+services:
+  payment-processor:
+    environment:
+      - ENABLE_SLOW_PAYMENTS=true
+      - PAYMENT_DELAY_MS=5000
+      - ENABLE_PAYMENT_FAILURES=true
+      - PAYMENT_FAILURE_RATE=0.2
