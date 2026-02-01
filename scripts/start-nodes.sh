@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Start OpsSquad agents on all containers (agents must already be installed)
+# Start OpsSquad nodes on all containers (nodes must already be installed)
 #
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -15,7 +15,7 @@ BLUE='\033[0;34m'
 NC='\033[0m'
 
 echo ""
-echo -e "${BLUE}Starting OpsSquad agents...${NC}"
+echo -e "${BLUE}Starting OpsSquad nodes...${NC}"
 echo ""
 
 # Check if jq is installed
@@ -42,32 +42,32 @@ for CONTAINER in $CONTAINERS; do
         continue
     fi
 
-    # Check if agent is already running
-    if docker exec "$CONTAINER" pgrep -f fixpanic-connectivity-layer > /dev/null 2>&1; then
-        echo -e "${BLUE}●${NC} $CONTAINER: Agent already running"
+    # Check if node is already running
+    if docker exec "$CONTAINER" pgrep -f opssquad-connectivity-layer > /dev/null 2>&1; then
+        echo -e "${BLUE}●${NC} $CONTAINER: Node already running"
         ((ALREADY_RUNNING++))
         continue
     fi
 
-    # Try to start agent
+    # Try to start node
     RESULT=$(docker exec "$CONTAINER" bash -c '
-        AGENT_BINARY="$HOME/.local/lib/fixpanic/fixpanic-connectivity-layer"
-        AGENT_CONFIG="$HOME/.config/fixpanic/agent.yaml"
+        NODE_BINARY="$HOME/.local/lib/opssquad/opssquad-connectivity-layer"
+        NODE_CONFIG="$HOME/.config/opssquad/node.yaml"
 
-        if [ ! -f "$AGENT_BINARY" ]; then
+        if [ ! -f "$NODE_BINARY" ]; then
             echo "NOT_INSTALLED"
             exit 1
         fi
 
-        if [ ! -f "$AGENT_CONFIG" ]; then
+        if [ ! -f "$NODE_CONFIG" ]; then
             echo "NO_CONFIG"
             exit 1
         fi
 
-        nohup "$AGENT_BINARY" --config "$AGENT_CONFIG" > /var/log/opssquad-agent.log 2>&1 &
+        nohup "$NODE_BINARY" --config "$NODE_CONFIG" > /var/log/opssquad-connectivity-layer.log 2>&1 &
         sleep 2
 
-        if pgrep -f fixpanic-connectivity-layer > /dev/null; then
+        if pgrep -f opssquad-connectivity-layer > /dev/null; then
             echo "STARTED"
         else
             echo "FAILED"
@@ -76,19 +76,19 @@ for CONTAINER in $CONTAINERS; do
 
     case "$RESULT" in
         STARTED)
-            echo -e "${GREEN}✓${NC} $CONTAINER: Agent started"
+            echo -e "${GREEN}✓${NC} $CONTAINER: Node started"
             ((STARTED++))
             ;;
         NOT_INSTALLED)
-            echo -e "${RED}✗${NC} $CONTAINER: Agent not installed"
+            echo -e "${RED}✗${NC} $CONTAINER: Node not installed"
             ((FAILED++))
             ;;
         NO_CONFIG)
-            echo -e "${RED}✗${NC} $CONTAINER: Agent config missing"
+            echo -e "${RED}✗${NC} $CONTAINER: Node config missing"
             ((FAILED++))
             ;;
         *)
-            echo -e "${RED}✗${NC} $CONTAINER: Failed to start agent"
+            echo -e "${RED}✗${NC} $CONTAINER: Failed to start node"
             ((FAILED++))
             ;;
     esac

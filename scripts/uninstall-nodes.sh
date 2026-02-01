@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Uninstall OpsSquad agents from all containers
+# Uninstall OpsSquad nodes from all containers
 #
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -15,7 +15,7 @@ BLUE='\033[0;34m'
 NC='\033[0m'
 
 echo ""
-echo -e "${BLUE}Uninstalling OpsSquad agents...${NC}"
+echo -e "${BLUE}Uninstalling OpsSquad nodes...${NC}"
 echo ""
 
 # Check if jq is installed
@@ -40,18 +40,18 @@ for CONTAINER in $CONTAINERS; do
         continue
     fi
 
-    # Uninstall agent
+    # Uninstall node
     RESULT=$(docker exec "$CONTAINER" bash -c '
-        # Stop agent if running
-        pkill -f fixpanic-connectivity-layer 2>/dev/null || true
+        # Stop node if running
+        pkill -f opssquad-connectivity-layer 2>/dev/null || true
 
         # Check if installed
-        if [ -d "$HOME/.local/bin" ] && [ -f "$HOME/.local/bin/fixpanic" ]; then
+        if [ -d "$HOME/.local/bin" ] && [ -f "$HOME/.local/bin/opssquad" ]; then
             # Remove all OpsSquad files
-            rm -rf "$HOME/.local/bin/fixpanic" 2>/dev/null
-            rm -rf "$HOME/.local/lib/fixpanic" 2>/dev/null
-            rm -rf "$HOME/.config/fixpanic" 2>/dev/null
-            rm -f /var/log/opssquad-agent.log 2>/dev/null
+            rm -rf "$HOME/.local/bin/opssquad" 2>/dev/null
+            rm -rf "$HOME/.local/lib/opssquad" 2>/dev/null
+            rm -rf "$HOME/.config/opssquad" 2>/dev/null
+            rm -f /var/log/opssquad-connectivity-layer.log 2>/dev/null
             echo "UNINSTALLED"
         else
             echo "NOT_INSTALLED"
@@ -60,11 +60,11 @@ for CONTAINER in $CONTAINERS; do
 
     case "$RESULT" in
         UNINSTALLED)
-            echo -e "${GREEN}✓${NC} $CONTAINER: Agent uninstalled"
+            echo -e "${GREEN}✓${NC} $CONTAINER: Node uninstalled"
             ((UNINSTALLED++))
             ;;
         NOT_INSTALLED)
-            echo -e "${YELLOW}●${NC} $CONTAINER: Agent not installed"
+            echo -e "${YELLOW}●${NC} $CONTAINER: Node not installed"
             ((NOT_INSTALLED++))
             ;;
     esac

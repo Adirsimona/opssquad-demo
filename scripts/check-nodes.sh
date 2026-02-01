@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Check OpsSquad Agent Status on all containers
+# Check OpsSquad Node Status on all containers
 #
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -16,7 +16,7 @@ NC='\033[0m'
 
 echo ""
 echo -e "${BLUE}╔════════════════════════════════════════════════════════════╗${NC}"
-echo -e "${BLUE}║              OpsSquad Agent Status Check                   ║${NC}"
+echo -e "${BLUE}║               OpsSquad Node Status Check                   ║${NC}"
 echo -e "${BLUE}╚════════════════════════════════════════════════════════════╝${NC}"
 echo ""
 
@@ -34,7 +34,7 @@ else
     CONTAINERS="fintech-api-gateway fintech-auth-service fintech-account-service fintech-transaction-service fintech-fraud-detection fintech-notification-service fintech-payment-processor"
 fi
 
-printf "%-30s %-15s %-10s %s\n" "Container" "Agent Status" "PID" "Uptime"
+printf "%-30s %-15s %-10s %s\n" "Container" "Node Status" "PID" "Uptime"
 echo "────────────────────────────────────────────────────────────────────────"
 
 RUNNING=0
@@ -48,10 +48,10 @@ for CONTAINER in $CONTAINERS; do
         continue
     fi
 
-    # Check agent status
+    # Check node status
     STATUS=$(docker exec "$CONTAINER" bash -c '
-        if pgrep -f fixpanic-connectivity-layer > /dev/null 2>&1; then
-            PID=$(pgrep -f fixpanic-connectivity-layer | head -1)
+        if pgrep -f opssquad-connectivity-layer > /dev/null 2>&1; then
+            PID=$(pgrep -f opssquad-connectivity-layer | head -1)
             # Get uptime (works on Linux)
             if [ -f "/proc/$PID/stat" ]; then
                 START_TIME=$(stat -c %Y /proc/$PID 2>/dev/null || echo "0")
@@ -68,7 +68,7 @@ for CONTAINER in $CONTAINERS; do
                 UPTIME_STR="unknown"
             fi
             echo "RUNNING|$PID|$UPTIME_STR"
-        elif [ -f "$HOME/.local/bin/fixpanic" ]; then
+        elif [ -f "$HOME/.local/bin/opssquad" ]; then
             echo "STOPPED|-|-"
         else
             echo "NOT_INSTALLED|-|-"
@@ -104,13 +104,13 @@ echo -e "Summary: ${GREEN}$RUNNING running${NC}, ${YELLOW}$STOPPED stopped${NC},
 echo ""
 
 if [ $STOPPED -gt 0 ]; then
-    echo "To start stopped agents:"
-    echo "  ./scripts/start-agents.sh"
+    echo "To start stopped nodes:"
+    echo "  ./scripts/start-nodes.sh"
     echo ""
 fi
 
 if [ $NOT_INSTALLED -gt 0 ]; then
-    echo "To install missing agents:"
-    echo "  ./scripts/install-agents.sh"
+    echo "To install missing nodes:"
+    echo "  ./scripts/install-nodes.sh"
     echo ""
 fi

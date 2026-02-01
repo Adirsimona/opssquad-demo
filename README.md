@@ -29,7 +29,7 @@ This demo environment simulates a realistic banking microservices architecture w
 - **10 interconnected services** (7 application services + 3 infrastructure)
 - **6 switchable incident scenarios** that can be activated independently
 - **Real-time dashboard** showing service health and transaction flow
-- **OpsSquad agent integration** on every service for AI investigation
+- **OpsSquad node integration** on every service for AI investigation
 - **Traffic generation tools** to trigger and observe issues
 
 **Use Cases:**
@@ -64,7 +64,7 @@ This demo environment simulates a realistic banking microservices architecture w
          │ :5432  │  │ :6379  │  │ :5672  │  │ :3006  │
          └────────┘  └────────┘  └────────┘  └────────┘
 
-Each application service runs an OpsSquad agent for AI-powered investigation
+Each application service runs an OpsSquad node for AI-powered investigation
 ```
 
 ### Transaction Flow
@@ -361,7 +361,7 @@ Each scenario activates specific bugs in the services. Only one scenario can run
 
 ## OpsSquad Integration
 
-OpsSquad agents can be easily installed on all containers using a simple JSON configuration file.
+OpsSquad nodes can be easily installed on all containers using a simple JSON configuration file.
 
 ### Quick Setup (Recommended)
 
@@ -379,13 +379,13 @@ cp nodes.example.json nodes.json
 ```json
 {
   "global": {
-    "api_key": "your-actual-api-key"
+    "token": "your-actual-token"
   },
   "nodes": [
     {
       "name": "API Gateway",
       "container": "fintech-api-gateway",
-      "agent_id": "paste-agent-id-from-dashboard",
+      "node_id": "paste-node-id-from-dashboard",
       "enabled": true
     },
     ...
@@ -393,12 +393,12 @@ cp nodes.example.json nodes.json
 }
 ```
 
-**Step 4:** Install agents on all containers with a single command:
+**Step 4:** Install nodes on all containers with a single command:
 ```bash
-./scripts/install-agents.sh
+./scripts/install-nodes.sh
 ```
 
-That's it! All agents will be installed and started automatically.
+That's it! All nodes will be installed and started automatically.
 
 ### Node Configuration Format
 
@@ -407,14 +407,14 @@ The `nodes.json` file structure:
 ```json
 {
   "global": {
-    "api_key": "your-opssquad-api-key",
+    "token": "your-opssquad-token",
     "socket_url": "socket.opssquad.ai:9000"
   },
   "nodes": [
     {
       "name": "Service Name",
       "container": "docker-container-name",
-      "agent_id": "uuid-from-dashboard",
+      "node_id": "uuid-from-dashboard",
       "enabled": true
     }
   ]
@@ -423,22 +423,22 @@ The `nodes.json` file structure:
 
 | Field | Description |
 |-------|-------------|
-| `global.api_key` | Your OpsSquad API key (shared across all nodes) |
+| `global.token` | Your OpsSquad token (shared across all nodes) |
 | `global.socket_url` | OpsSquad socket server URL |
 | `nodes[].name` | Display name for the service |
-| `nodes[].container` | Docker container name to install agent on |
-| `nodes[].agent_id` | Agent ID from OpsSquad dashboard |
+| `nodes[].container` | Docker container name to install node on |
+| `nodes[].node_id` | Node ID from OpsSquad dashboard |
 | `nodes[].enabled` | Set to `false` to skip this node |
 
-### Agent Management Scripts
+### Node Management Scripts
 
 | Script | Description |
 |--------|-------------|
-| `./scripts/install-agents.sh` | Install and start agents on all configured containers |
-| `./scripts/check-agents.sh` | Check status of all agents (running/stopped/not installed) |
-| `./scripts/start-agents.sh` | Start agents that are installed but not running |
-| `./scripts/stop-agents.sh` | Stop all running agents |
-| `./scripts/uninstall-agents.sh` | Completely remove agents from all containers |
+| `./scripts/install-nodes.sh` | Install and start nodes on all configured containers |
+| `./scripts/check-nodes.sh` | Check status of all nodes (running/stopped/not installed) |
+| `./scripts/start-nodes.sh` | Start nodes that are installed but not running |
+| `./scripts/stop-nodes.sh` | Stop all running nodes |
+| `./scripts/uninstall-nodes.sh` | Completely remove nodes from all containers |
 
 ### Example Workflow for Demo
 
@@ -446,13 +446,13 @@ The `nodes.json` file structure:
 # 1. Start the demo with a scenario
 ./scripts/start-demo.sh memory-leak
 
-# 2. Configure and install agents (first time only)
+# 2. Configure and install nodes (first time only)
 cp nodes.example.json nodes.json
 # Edit nodes.json with your credentials
-./scripts/install-agents.sh
+./scripts/install-nodes.sh
 
-# 3. Verify agents are running
-./scripts/check-agents.sh
+# 3. Verify nodes are running
+./scripts/check-nodes.sh
 
 # 4. Generate traffic to trigger the issue
 ./scripts/traffic-generator.sh 300 10
@@ -476,15 +476,15 @@ Service-specific investigation guidance is in `/prompts/agents/`. These can be u
 | `stop-demo.sh` | `./scripts/stop-demo.sh` | Stop all containers |
 | `reset-demo.sh` | `./scripts/reset-demo.sh` | Full cleanup (volumes, images) |
 
-### Agent Management
+### Node Management
 
 | Script | Usage | Description |
 |--------|-------|-------------|
-| `install-agents.sh` | `./scripts/install-agents.sh` | Install agents from nodes.json |
-| `check-agents.sh` | `./scripts/check-agents.sh` | Check agent status |
-| `start-agents.sh` | `./scripts/start-agents.sh` | Start stopped agents |
-| `stop-agents.sh` | `./scripts/stop-agents.sh` | Stop running agents |
-| `uninstall-agents.sh` | `./scripts/uninstall-agents.sh` | Remove agents |
+| `install-nodes.sh` | `./scripts/install-nodes.sh` | Install nodes from nodes.json |
+| `check-nodes.sh` | `./scripts/check-nodes.sh` | Check node status |
+| `start-nodes.sh` | `./scripts/start-nodes.sh` | Start stopped nodes |
+| `stop-nodes.sh` | `./scripts/stop-nodes.sh` | Stop running nodes |
+| `uninstall-nodes.sh` | `./scripts/uninstall-nodes.sh` | Remove nodes |
 
 ### Traffic & Monitoring
 

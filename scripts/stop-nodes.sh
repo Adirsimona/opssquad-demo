@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Stop OpsSquad agents on all containers
+# Stop OpsSquad nodes on all containers
 #
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -15,7 +15,7 @@ BLUE='\033[0;34m'
 NC='\033[0m'
 
 echo ""
-echo -e "${BLUE}Stopping OpsSquad agents...${NC}"
+echo -e "${BLUE}Stopping OpsSquad nodes...${NC}"
 echo ""
 
 # Check if jq is installed
@@ -40,13 +40,13 @@ for CONTAINER in $CONTAINERS; do
         continue
     fi
 
-    # Check if agent is running
-    if docker exec "$CONTAINER" pgrep -f fixpanic-connectivity-layer > /dev/null 2>&1; then
-        docker exec "$CONTAINER" pkill -f fixpanic-connectivity-layer 2>/dev/null
-        echo -e "${GREEN}✓${NC} $CONTAINER: Agent stopped"
+    # Check if node is running
+    if docker exec "$CONTAINER" pgrep -f opssquad-connectivity-layer > /dev/null 2>&1; then
+        docker exec "$CONTAINER" pkill -f opssquad-connectivity-layer 2>/dev/null
+        echo -e "${GREEN}✓${NC} $CONTAINER: Node stopped"
         ((STOPPED++))
     else
-        echo -e "${YELLOW}●${NC} $CONTAINER: Agent not running"
+        echo -e "${YELLOW}●${NC} $CONTAINER: Node not running"
         ((NOT_RUNNING++))
     fi
 done
