@@ -4,7 +4,7 @@
 # Reads nodes.json and installs OpsSquad nodes on all configured containers
 #
 
-set -e
+# Don't use set -e as it causes issues with the while loop and docker exec
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DEMO_DIR="$(dirname "$SCRIPT_DIR")"
@@ -107,33 +107,38 @@ jq -c '.nodes[]' "$CONFIG_FILE" | while read -r node; do
 
     # Install node in container
     INSTALL_OUTPUT=$(docker exec "$CONTAINER" bash -c "
-        set -e
-
-        # Add local bin to PATH
-        export PATH=\"\$HOME/.local/bin:\$PATH\"
+        # Add both possible bin locations to PATH
+        export PATH=\"/usr/local/bin:\$HOME/.local/bin:\$PATH\"
 
         # Check if already installed and running
-        if command -v opssquad &> /dev/null && opssquad node status 2>/dev/null | grep -q 'RUNNING'; then
+        if command -v opssquad &> /dev/null && opssquad node status 2>&1 | grep -q 'RUNNING'; then
             echo 'ALREADY_RUNNING'
             exit 0
         fi
 
         # Clean up previous installation
         pkill -f opssquad-connectivity-layer 2>/dev/null || true
-        rm -rf \$HOME/.local/bin/opssquad \$HOME/.local/lib/opssquad \$HOME/.config/opssquad 2>/dev/null || true
 
-        # Step 1: Install the OpsSquad CLI
-        curl -fsSL https://install.opssquad.ai/install.sh 2>/dev/null | bash 2>/dev/null
+        # Step 1: Install the OpsSquad CLI (download script first, then execute)
+        curl -fsSL https://install.opssquad.ai/install.sh -o /tmp/install-opssquad.sh
+        bash /tmp/install-opssquad.sh > /dev/null 2>&1
+        rm -f /tmp/install-opssquad.sh
+
+        # Verify CLI was installed
+        if ! command -v opssquad &> /dev/null; then
+            echo 'CLI_INSTALL_FAILED'
+            exit 1
+        fi
 
         # Step 2: Install the node with credentials
-        \$HOME/.local/bin/opssquad node install --node-id=\"$NODE_ID\" --token=\"$TOKEN\"
+        opssquad node install --node-id=\"$NODE_ID\" --token=\"$TOKEN\" > /dev/null 2>&1
 
         # Step 3: Start the node
-        \$HOME/.local/bin/opssquad node start
+        opssquad node start > /dev/null 2>&1
 
         # Step 4: Verify status
         sleep 2
-        if \$HOME/.local/bin/opssquad node status 2>/dev/null | grep -q 'RUNNING'; then
+        if opssquad node status 2>&1 | grep -q 'RUNNING'; then
             echo 'SUCCESS'
         else
             echo 'NODE_START_FAILED'
@@ -145,11 +150,13 @@ jq -c '.nodes[]' "$CONFIG_FILE" | while read -r node; do
         echo -e "\r${GREEN}✓${NC} $NAME ($CONTAINER): Node installed and running      "
     elif echo "$INSTALL_OUTPUT" | grep -q "ALREADY_RUNNING"; then
         echo -e "\r${BLUE}●${NC} $NAME ($CONTAINER): Node already running            "
+    elif echo "$INSTALL_OUTPUT" | grep -q "CLI_INSTALL_FAILED"; then
+        echo -e "\r${RED}✗${NC} $NAME ($CONTAINER): Failed to install OpsSquad CLI"
     elif echo "$INSTALL_OUTPUT" | grep -q "NODE_START_FAILED"; then
         echo -e "\r${RED}✗${NC} $NAME ($CONTAINER): Node installed but failed to start"
     else
         echo -e "\r${RED}✗${NC} $NAME ($CONTAINER): Installation failed"
-        echo "    Error: $(echo "$INSTALL_OUTPUT" | tail -3)"
+        echo "    Output: $(echo "$INSTALL_OUTPUT" | tail -5)"
     fi
 done
 
