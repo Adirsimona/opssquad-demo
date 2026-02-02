@@ -392,23 +392,25 @@ cp nodes.example.json nodes.json
 - Create nodes for each service in the OpsSquad dashboard
 - Copy the **Node ID** and **Token** for each node
 
-**Step 4:** Edit `nodes.json` with your credentials:
+**Step 4:** Edit `nodes.json` with your credentials (each node has its own node_id and token):
 ```json
 {
   "global": {
-    "token": "fp_your_token_here"
+    "socket_url": "socket.opssquad.ai:9000"
   },
   "nodes": [
     {
       "name": "API Gateway",
       "container": "fintech-api-gateway",
-      "node_id": "node_abc123",
+      "node_id": "dfc4966b-560e-4b64-b2a9-a22701d68452",
+      "token": "node_1421fe541a0c4d2db49ee35ef3ad9205",
       "enabled": true
     },
     {
       "name": "Auth Service",
       "container": "fintech-auth-service",
-      "node_id": "node_def456",
+      "node_id": "abc12345-1234-5678-9abc-def012345678",
+      "token": "node_abcdef1234567890abcdef1234567890",
       "enabled": true
     }
   ]
@@ -431,11 +433,11 @@ The script will show progress for each container:
 
 | Field | Description |
 |-------|-------------|
-| `global.token` | Your OpsSquad token (shared across all nodes) |
 | `global.socket_url` | Socket server URL (default: `socket.opssquad.ai:9000`) |
 | `nodes[].name` | Display name for the service |
 | `nodes[].container` | Docker container name to deploy to |
 | `nodes[].node_id` | Node ID from OpsSquad dashboard |
+| `nodes[].token` | Node token from OpsSquad dashboard |
 | `nodes[].enabled` | Set to `false` to skip this node |
 
 ### Node Management Scripts

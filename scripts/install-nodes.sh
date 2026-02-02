@@ -47,28 +47,20 @@ if [ ! -f "$CONFIG_FILE" ]; then
 fi
 
 # Read global config
-TOKEN=$(jq -r '.global.token' "$CONFIG_FILE")
 SOCKET_URL=$(jq -r '.global.socket_url // "socket.opssquad.ai:9000"' "$CONFIG_FILE")
-
-if [ -z "$TOKEN" ] || [ "$TOKEN" == "null" ] || [ "$TOKEN" == "your-opssquad-token-here" ]; then
-    echo -e "${RED}Error: Token not configured in $CONFIG_FILE${NC}"
-    echo "Please add your OpsSquad token to the 'global.token' field"
-    exit 1
-fi
 
 echo -e "${GREEN}Configuration loaded from: $CONFIG_FILE${NC}"
 echo -e "Socket URL: $SOCKET_URL"
-echo -e "Token: ${TOKEN:0:8}...${TOKEN: -4}"
 echo ""
 
-# Count enabled nodes
-TOTAL_NODES=$(jq '[.nodes[] | select(.enabled == true and .node_id != "")] | length' "$CONFIG_FILE")
-echo -e "Found ${BLUE}$TOTAL_NODES${NC} enabled nodes with IDs configured"
+# Count enabled nodes with both node_id and token
+TOTAL_NODES=$(jq '[.nodes[] | select(.enabled == true and .node_id != "" and .node_id != null and .token != "" and .token != null)] | length' "$CONFIG_FILE")
+echo -e "Found ${BLUE}$TOTAL_NODES${NC} enabled nodes with credentials configured"
 echo ""
 
 if [ "$TOTAL_NODES" -eq 0 ]; then
-    echo -e "${YELLOW}Warning: No nodes are configured with node IDs.${NC}"
-    echo "Please edit nodes.json and add node IDs for each service."
+    echo -e "${YELLOW}Warning: No nodes are configured with node_id and token.${NC}"
+    echo "Please edit nodes.json and add node_id and token for each service."
     exit 1
 fi
 
@@ -84,6 +76,7 @@ jq -c '.nodes[]' "$CONFIG_FILE" | while read -r node; do
     NAME=$(echo "$node" | jq -r '.name')
     CONTAINER=$(echo "$node" | jq -r '.container')
     NODE_ID=$(echo "$node" | jq -r '.node_id')
+    TOKEN=$(echo "$node" | jq -r '.token')
     ENABLED=$(echo "$node" | jq -r '.enabled')
 
     # Skip disabled nodes
@@ -94,7 +87,13 @@ jq -c '.nodes[]' "$CONFIG_FILE" | while read -r node; do
 
     # Skip nodes without node ID
     if [ -z "$NODE_ID" ] || [ "$NODE_ID" == "null" ] || [ "$NODE_ID" == "" ]; then
-        echo -e "${YELLOW}⊘${NC} $NAME: No node ID configured, skipping"
+        echo -e "${YELLOW}⊘${NC} $NAME: No node_id configured, skipping"
+        continue
+    fi
+
+    # Skip nodes without token
+    if [ -z "$TOKEN" ] || [ "$TOKEN" == "null" ] || [ "$TOKEN" == "" ]; then
+        echo -e "${YELLOW}⊘${NC} $NAME: No token configured, skipping"
         continue
     fi
 

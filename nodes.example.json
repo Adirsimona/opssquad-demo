@@ -1,9 +1,8 @@
 {
   "description": "OpsSquad Node Configuration for FinTech Demo",
-  "instructions": "Copy this file to nodes.json and fill in your node IDs and token from the OpsSquad dashboard",
+  "instructions": "Copy this file to nodes.json and fill in your node IDs and tokens from the OpsSquad dashboard",
 
   "global": {
-    "token": "your-opssquad-token-here",
     "socket_url": "socket.opssquad.ai:9000"
   },
 
@@ -12,42 +11,49 @@
       "name": "API Gateway",
       "container": "fintech-api-gateway",
       "node_id": "",
+      "token": "",
       "enabled": true
     },
     {
       "name": "Auth Service",
       "container": "fintech-auth-service",
       "node_id": "",
+      "token": "",
       "enabled": true
     },
     {
       "name": "Account Service",
       "container": "fintech-account-service",
       "node_id": "",
+      "token": "",
       "enabled": true
     },
     {
       "name": "Transaction Service",
       "container": "fintech-transaction-service",
       "node_id": "",
+      "token": "",
       "enabled": true
     },
     {
       "name": "Fraud Detection",
       "container": "fintech-fraud-detection",
       "node_id": "",
+      "token": "",
       "enabled": true
     },
     {
       "name": "Notification Service",
       "container": "fintech-notification-service",
       "node_id": "",
+      "token": "",
       "enabled": true
     },
     {
       "name": "Payment Processor",
       "container": "fintech-payment-processor",
       "node_id": "",
+      "token": "",
       "enabled": true
     }
   ]
