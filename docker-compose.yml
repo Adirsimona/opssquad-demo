@@ -23,8 +23,8 @@ services:
     ports:
       - "8080:80"
     environment:
-      - OPSSQUAD_AGENT_ID=${API_GATEWAY_AGENT_ID:-}
-      - OPSSQUAD_API_KEY=${OPSSQUAD_API_KEY:-}
+      - OPSSQUAD_NODE_ID=${API_GATEWAY_NODE_ID:-}
+      - OPSSQUAD_TOKEN=${API_GATEWAY_TOKEN:-}
     depends_on:
       - auth-service
       - account-service
@@ -64,9 +64,9 @@ services:
       # Issue simulation flags
       - ENABLE_TOKEN_FAILURE=${ENABLE_TOKEN_FAILURE:-false}
       - TOKEN_FAILURE_RATE=${TOKEN_FAILURE_RATE:-0.3}
-      # OpsSquad Agent
-      - OPSSQUAD_AGENT_ID=${AUTH_SERVICE_AGENT_ID:-}
-      - OPSSQUAD_API_KEY=${OPSSQUAD_API_KEY:-}
+      # OpsSquad Node
+      - OPSSQUAD_NODE_ID=${AUTH_SERVICE_NODE_ID:-}
+      - OPSSQUAD_TOKEN=${AUTH_SERVICE_TOKEN:-}
     depends_on:
       - redis
     cap_add:
@@ -111,9 +111,9 @@ services:
       - ENABLE_MEMORY_LEAK=${ENABLE_MEMORY_LEAK:-false}
       - MEMORY_LEAK_RATE_MB=${MEMORY_LEAK_RATE_MB:-5}
       - ENABLE_CONNECTION_LEAK=${ENABLE_CONNECTION_LEAK:-false}
-      # OpsSquad Agent
-      - OPSSQUAD_AGENT_ID=${ACCOUNT_SERVICE_AGENT_ID:-}
-      - OPSSQUAD_API_KEY=${OPSSQUAD_API_KEY:-}
+      # OpsSquad Node
+      - OPSSQUAD_NODE_ID=${ACCOUNT_SERVICE_NODE_ID:-}
+      - OPSSQUAD_TOKEN=${ACCOUNT_SERVICE_TOKEN:-}
     depends_on:
       - postgres
       - redis
@@ -161,9 +161,9 @@ services:
       # Issue simulation flags
       - ENABLE_CASCADE_TIMEOUT=${ENABLE_CASCADE_TIMEOUT:-false}
       - DOWNSTREAM_TIMEOUT_MS=${DOWNSTREAM_TIMEOUT_MS:-5000}
-      # OpsSquad Agent
-      - OPSSQUAD_AGENT_ID=${TRANSACTION_SERVICE_AGENT_ID:-}
-      - OPSSQUAD_API_KEY=${OPSSQUAD_API_KEY:-}
+      # OpsSquad Node
+      - OPSSQUAD_NODE_ID=${TRANSACTION_SERVICE_NODE_ID:-}
+      - OPSSQUAD_TOKEN=${TRANSACTION_SERVICE_TOKEN:-}
     depends_on:
       - postgres
       - redis
@@ -205,9 +205,9 @@ services:
       # Issue simulation flags
       - ENABLE_SLOW_SCORING=${ENABLE_SLOW_SCORING:-false}
       - SCORING_DELAY_MS=${SCORING_DELAY_MS:-8000}
-      # OpsSquad Agent
-      - OPSSQUAD_AGENT_ID=${FRAUD_SERVICE_AGENT_ID:-}
-      - OPSSQUAD_API_KEY=${OPSSQUAD_API_KEY:-}
+      # OpsSquad Node
+      - OPSSQUAD_NODE_ID=${FRAUD_SERVICE_NODE_ID:-}
+      - OPSSQUAD_TOKEN=${FRAUD_SERVICE_TOKEN:-}
     depends_on:
       - redis
     cap_add:
@@ -247,9 +247,9 @@ services:
       # Issue simulation flags
       - ENABLE_SLOW_CONSUMER=${ENABLE_SLOW_CONSUMER:-false}
       - CONSUMER_DELAY_MS=${CONSUMER_DELAY_MS:-5000}
-      # OpsSquad Agent
-      - OPSSQUAD_AGENT_ID=${NOTIFICATION_SERVICE_AGENT_ID:-}
-      - OPSSQUAD_API_KEY=${OPSSQUAD_API_KEY:-}
+      # OpsSquad Node
+      - OPSSQUAD_NODE_ID=${NOTIFICATION_SERVICE_NODE_ID:-}
+      - OPSSQUAD_TOKEN=${NOTIFICATION_SERVICE_TOKEN:-}
     depends_on:
       - rabbitmq
       - redis
@@ -290,9 +290,9 @@ services:
       - PAYMENT_DELAY_MS=${PAYMENT_DELAY_MS:-10000}
       - ENABLE_PAYMENT_FAILURES=${ENABLE_PAYMENT_FAILURES:-false}
       - PAYMENT_FAILURE_RATE=${PAYMENT_FAILURE_RATE:-0.2}
-      # OpsSquad Agent
-      - OPSSQUAD_AGENT_ID=${PAYMENT_SERVICE_AGENT_ID:-}
-      - OPSSQUAD_API_KEY=${OPSSQUAD_API_KEY:-}
+      # OpsSquad Node
+      - OPSSQUAD_NODE_ID=${PAYMENT_SERVICE_NODE_ID:-}
+      - OPSSQUAD_TOKEN=${PAYMENT_SERVICE_TOKEN:-}
     cap_add:
       - SYS_PTRACE
       - SYS_ADMIN

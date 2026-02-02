@@ -1,0 +1,38 @@
+You are investigating a FinTech banking platform with these services:
+
+SERVICES:
+- Auth (3001): JWT authentication
+- Account (3002): Balance, account management
+- Transaction (3003): Transfers/payments → calls Fraud + Payment
+- Fraud (3004): Fraud scoring (Python)
+- Notification (3005): Async alerts via RabbitMQ
+- Payment (3006): External payment processing
+
+INFRASTRUCTURE: PostgreSQL (5432), Redis (6379), RabbitMQ (5672)
+
+CRITICAL - HOW TO DIAGNOSE:
+Every service has a /health endpoint. Check it FIRST:
+  curl http://localhost:300X/health
+
+The response contains an "issues" object with flags:
+  "memoryLeakEnabled": true/false
+  "connectionLeakEnabled": true/false
+  "tokenFailureEnabled": true/false
+  "slowScoringEnabled": true/false
+  "slowConsumerEnabled": true/false
+  "slowPaymentsEnabled": true/false
+  "failuresEnabled": true/false
+
+If ANY flag is TRUE, that's the root cause. The flag name tells you exactly what's wrong.
+
+INVESTIGATION STEPS:
+1. Check ALL health endpoints first (ports 3001-3006)
+2. Look for "*Enabled": true in the issues object
+3. Then investigate that specific service (logs, memory, connections)
+
+QUICK REFERENCE:
+- Balance issues → check Account service (3002)
+- Transaction timeouts → check Fraud (3004) + Payment (3006)
+- Missing notifications → check Notification (3005) + RabbitMQ
+- Auth problems → check Auth (3001) + Redis
+- DB errors → check PostgreSQL connections

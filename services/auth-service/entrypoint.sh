@@ -5,33 +5,33 @@ echo "=========================================="
 echo "FinTech Auth Service Starting"
 echo "=========================================="
 
-# Check if OpsSquad agent credentials are provided
-if [ -n "$OPSSQUAD_AGENT_ID" ] && [ -n "$OPSSQUAD_API_KEY" ]; then
-    echo "Agent ID: $OPSSQUAD_AGENT_ID"
+# Check if OpsSquad node credentials are provided
+if [ -n "$OPSSQUAD_NODE_ID" ] && [ -n "$OPSSQUAD_TOKEN" ]; then
+    echo "Node ID: $OPSSQUAD_NODE_ID"
     echo "Container: $(hostname)"
     echo "=========================================="
 
-    # Clean up any previous installation
-    rm -rf "$HOME/.local/bin/fixpanic" "$HOME/.local/lib/fixpanic" "$HOME/.config/fixpanic" 2>/dev/null || true
+    export PATH="/usr/local/bin:$HOME/.local/bin:$PATH"
 
-    # Get latest version
-    export VERSION=$(curl -sI https://github.com/fixpanic/fixpanic-cli-tool/releases/latest 2>/dev/null | grep -i location | sed 's/.*tag\///' | tr -d '\r\n')
+    if command -v opssquad &> /dev/null && opssquad node status 2>&1 | grep -q 'RUNNING'; then
+        echo "OpsSquad node already running"
+    else
+        pkill -f opssquad-connectivity-layer 2>/dev/null || true
+        rm -rf /usr/local/bin/opssquad /usr/local/lib/opssquad /etc/opssquad 2>/dev/null || true
 
-    # Install OpsSquad CLI
-    if curl -fsSL https://install.fixpanic.com/install.sh 2>/dev/null | bash; then
-        export PATH="$HOME/.local/bin:$PATH"
-
-        if "$HOME/.local/bin/fixpanic" agent install --agent-id="$OPSSQUAD_AGENT_ID" --api-key="$OPSSQUAD_API_KEY" 2>/dev/null; then
-            AGENT_BINARY="$HOME/.local/lib/fixpanic/fixpanic-connectivity-layer"
-            AGENT_CONFIG="$HOME/.config/fixpanic/agent.yaml"
-            if [ -f "$AGENT_BINARY" ] && [ -f "$AGENT_CONFIG" ]; then
-                nohup "$AGENT_BINARY" --config "$AGENT_CONFIG" > /var/log/opssquad-agent.log 2>&1 &
-                echo "OpsSquad agent started"
+        echo "Installing OpsSquad CLI..."
+        if curl -fsSL https://install.opssquad.ai/install.sh -o /tmp/install-opssquad.sh && bash /tmp/install-opssquad.sh; then
+            rm -f /tmp/install-opssquad.sh
+            if opssquad node install --node-id="$OPSSQUAD_NODE_ID" --token="$OPSSQUAD_TOKEN"; then
+                if opssquad node start; then
+                    sleep 2
+                    opssquad node status 2>&1 | grep -q 'RUNNING' && echo "OpsSquad node started successfully"
+                fi
             fi
         fi
     fi
 else
-    echo "No agent credentials, skipping OpsSquad setup"
+    echo "No node credentials, skipping OpsSquad setup"
 fi
 
 echo "=========================================="

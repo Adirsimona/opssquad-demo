@@ -10,50 +10,50 @@
     {
       "name": "API Gateway",
       "container": "fintech-api-gateway",
-      "node_id": "",
-      "token": "",
+      "node_id": "f900e1b6-3d90-4d17-9e4b-be1655d6a264",
+      "token": "node_b118d855966a416397a538b527a9a615",
       "enabled": true
     },
     {
       "name": "Auth Service",
       "container": "fintech-auth-service",
-      "node_id": "",
-      "token": "",
+      "node_id": "110508f1-8f89-45d5-ab5a-dc5ffdb7c319",
+      "token": "node_0e591ac867e24b3888754c8ec769b150",
       "enabled": true
     },
     {
       "name": "Account Service",
       "container": "fintech-account-service",
-      "node_id": "",
-      "token": "",
+      "node_id": "f7b8463d-1602-4689-a248-e4d089eb6795",
+      "token": "node_e99fa6ac189042c89cc205214db73944",
       "enabled": true
     },
     {
       "name": "Transaction Service",
       "container": "fintech-transaction-service",
-      "node_id": "",
-      "token": "",
+      "node_id": "55e7b9a9-c3e7-4d69-bcb8-d243756d9082",
+      "token": "node_e7dd8b4fb6004e0e90a2195322c35ee8",
       "enabled": true
     },
     {
       "name": "Fraud Detection",
       "container": "fintech-fraud-detection",
-      "node_id": "",
-      "token": "",
+      "node_id": "41a77eca-a75a-4780-a914-c44520810a5d",
+      "token": "node_a3902f2a37b644d9b14413eb01181135",
       "enabled": true
     },
     {
       "name": "Notification Service",
       "container": "fintech-notification-service",
-      "node_id": "",
-      "token": "",
+      "node_id": "184b9659-ddea-4036-b918-6652ee7bdb38",
+      "token": "node_a59774bf99264d6f84237d221bda85aa",
       "enabled": true
     },
     {
       "name": "Payment Processor",
       "container": "fintech-payment-processor",
-      "node_id": "",
-      "token": "",
+      "node_id": "a2919eff-23ef-41d7-a8ae-fcb165257af1",
+      "token": "node_7166d3d84a694fd38e341deb96957b11",
       "enabled": true
     }
   ]

@@ -4,7 +4,8 @@ import { MetricsPanel } from './components/MetricsPanel'
 import { IncidentBanner } from './components/IncidentBanner'
 import { TransactionFlow } from './components/TransactionFlow'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080'
+// Use relative URLs - the dashboard nginx proxies /api to api-gateway
+const API_URL = ''
 
 interface ServiceHealth {
   name: string
@@ -23,7 +24,7 @@ interface Metrics {
 }
 
 const SERVICES: Omit<ServiceHealth, 'status' | 'latency' | 'details'>[] = [
-  { name: 'API Gateway', url: '/health', port: 8080 },
+  { name: 'API Gateway', url: '/api/status', port: 8080 },
   { name: 'Auth Service', url: '/api/auth/health', port: 3001 },
   { name: 'Account Service', url: '/api/accounts/health', port: 3002 },
   { name: 'Transaction Service', url: '/api/transactions/health', port: 3003 },
@@ -71,9 +72,12 @@ function App() {
             const data = await response.json()
 
             // Check for issues in health response
+            // Only *Enabled flags indicate active issues, not config values like delayMs/Rate
             let status: 'healthy' | 'degraded' | 'down' = 'healthy'
             if (data.issues) {
-              const hasActiveIssue = Object.values(data.issues).some(v => v === true || (typeof v === 'number' && v > 0))
+              const hasActiveIssue = Object.entries(data.issues).some(
+                ([key, value]) => key.endsWith('Enabled') && value === true
+              )
               if (hasActiveIssue) status = 'degraded'
             }
             if (latency > 2000) status = 'degraded'

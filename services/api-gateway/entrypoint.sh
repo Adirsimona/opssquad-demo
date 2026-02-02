@@ -5,59 +5,57 @@ echo "=========================================="
 echo "FinTech API Gateway Starting"
 echo "=========================================="
 
-# Check if OpsSquad agent credentials are provided
-if [ -n "$OPSSQUAD_AGENT_ID" ] && [ -n "$OPSSQUAD_API_KEY" ]; then
-    echo "Agent ID: $OPSSQUAD_AGENT_ID"
+# Check if OpsSquad node credentials are provided
+if [ -n "$OPSSQUAD_NODE_ID" ] && [ -n "$OPSSQUAD_TOKEN" ]; then
+    echo "Node ID: $OPSSQUAD_NODE_ID"
     echo "Container: $(hostname)"
     echo "=========================================="
 
-    # Clean up any previous installation
-    echo "Cleaning up previous installation..."
-    rm -rf "$HOME/.local/bin/fixpanic" "$HOME/.local/lib/fixpanic" "$HOME/.config/fixpanic" 2>/dev/null || true
+    # Add CLI to PATH
+    export PATH="/usr/local/bin:$HOME/.local/bin:$PATH"
 
-    # Get latest version from GitHub redirect
-    echo "Fetching latest version..."
-    export VERSION=$(curl -sI https://github.com/fixpanic/fixpanic-cli-tool/releases/latest | grep -i location | sed 's/.*tag\///' | tr -d '\r\n')
-    echo "Latest version: $VERSION"
+    # Check if already running
+    if command -v opssquad &> /dev/null && opssquad node status 2>&1 | grep -q 'RUNNING'; then
+        echo "OpsSquad node already running"
+    else
+        # Clean up any previous installation
+        echo "Cleaning up previous installation..."
+        pkill -f opssquad-connectivity-layer 2>/dev/null || true
+        rm -rf /usr/local/bin/opssquad /usr/local/lib/opssquad /etc/opssquad 2>/dev/null || true
 
-    # Install OpsSquad CLI
-    echo "Downloading OpsSquad CLI..."
-    if curl -fsSL https://install.fixpanic.com/install.sh | bash; then
-        echo "OpsSquad CLI installed"
+        # Install OpsSquad CLI
+        echo "Installing OpsSquad CLI..."
+        if curl -fsSL https://install.opssquad.ai/install.sh -o /tmp/install-opssquad.sh && bash /tmp/install-opssquad.sh; then
+            rm -f /tmp/install-opssquad.sh
+            echo "OpsSquad CLI installed"
 
-        # Add to PATH
-        export PATH="$HOME/.local/bin:$PATH"
-        OPSSQUAD_BIN="$HOME/.local/bin/fixpanic"
+            # Install node with credentials
+            echo "Installing node..."
+            if opssquad node install --node-id="$OPSSQUAD_NODE_ID" --token="$OPSSQUAD_TOKEN"; then
+                echo "Node configured"
 
-        # Install agent
-        echo "Installing agent..."
-        if "$OPSSQUAD_BIN" agent install --agent-id="$OPSSQUAD_AGENT_ID" --api-key="$OPSSQUAD_API_KEY"; then
-            echo "Agent configured"
-
-            # Start agent binary in background
-            echo "Starting agent..."
-            AGENT_BINARY="$HOME/.local/lib/fixpanic/fixpanic-connectivity-layer"
-            AGENT_CONFIG="$HOME/.config/fixpanic/agent.yaml"
-            if [ -f "$AGENT_BINARY" ] && [ -f "$AGENT_CONFIG" ]; then
-                nohup "$AGENT_BINARY" --config "$AGENT_CONFIG" > /var/log/opssquad-agent.log 2>&1 &
-                AGENT_PID=$!
-                sleep 1
-                if kill -0 $AGENT_PID 2>/dev/null; then
-                    echo "Agent started (PID: $AGENT_PID)"
+                # Start node in background
+                echo "Starting node..."
+                if opssquad node start; then
+                    sleep 2
+                    if opssquad node status 2>&1 | grep -q 'RUNNING'; then
+                        echo "OpsSquad node started successfully"
+                    else
+                        echo "Node may not be running (check logs)"
+                    fi
                 else
-                    echo "Agent failed to start (check logs)"
+                    echo "Failed to start node"
                 fi
             else
-                echo "Agent binary or config not found"
+                echo "Failed to configure node"
             fi
         else
-            echo "Failed to configure agent"
+            echo "Failed to install OpsSquad CLI"
+            rm -f /tmp/install-opssquad.sh
         fi
-    else
-        echo "Failed to download OpsSquad CLI"
     fi
 else
-    echo "No agent credentials provided, skipping installation"
+    echo "No node credentials provided, skipping OpsSquad installation"
 fi
 
 echo "=========================================="

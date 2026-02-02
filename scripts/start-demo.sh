@@ -13,6 +13,14 @@ echo "  FinTech Demo Environment"
 echo "========================================"
 echo ""
 
+# Auto-generate .env from nodes.json if nodes.json exists
+if [ -f "$DEMO_DIR/nodes.json" ]; then
+    if [ ! -f "$DEMO_DIR/.env" ] || [ "$DEMO_DIR/nodes.json" -nt "$DEMO_DIR/.env" ]; then
+        echo "Generating .env from nodes.json..."
+        "$SCRIPT_DIR/generate-env.sh"
+    fi
+fi
+
 # Build base images
 echo "Building Docker images..."
 docker-compose build
