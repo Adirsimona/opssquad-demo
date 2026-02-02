@@ -1,0 +1,42 @@
+{
+  "description": "OpsSquad Node definitions for FinTech Demo - Use these to create nodes in the OpsSquad dashboard",
+  "instructions": "Create each node in the OpsSquad dashboard using the name and description below, then copy the node_id and token back into nodes.json",
+
+  "nodes": [
+    {
+      "name": "API Gateway",
+      "container": "fintech-api-gateway",
+      "description": "This node is installed on the API Gateway server (nginx reverse proxy) for a FinTech banking platform. This server handles all incoming HTTP traffic on port 8080 and routes requests to backend microservices.\n\nResponsibilities:\n- Routes /api/auth/* to Auth Service\n- Routes /api/accounts/* to Account Service\n- Routes /api/transactions/* to Transaction Service\n- Routes /api/fraud/* to Fraud Detection Service\n- Routes /api/notifications/* to Notification Service\n- Routes /api/payments/* to Payment Processor\n\nUse this node to investigate:\n- 502/504 gateway errors\n- Routing issues\n- SSL/TLS problems\n- Request timeouts at the edge\n- Load balancing issues\n- Access logs and error logs in /var/log/nginx/\n\nKey files: /etc/nginx/nginx.conf, /var/log/nginx/access.log, /var/log/nginx/error.log"
+    },
+    {
+      "name": "Auth Service",
+      "container": "fintech-auth-service",
+      "description": "This node is installed on the Authentication Service server for a FinTech banking platform. This is a Node.js/Express application running on port 3001 that handles user authentication and session management.\n\nResponsibilities:\n- User login and JWT token generation\n- Token verification for other services\n- Session management with Redis\n- Password validation\n\nUse this node to investigate:\n- 401 Unauthorized errors\n- Token verification failures\n- Redis connection issues\n- Session expiration problems\n- Intermittent authentication failures\n- JWT signing/verification errors\n\nDependencies: Redis (for session storage)\nKey commands: Check Redis connection, verify JWT secrets, inspect auth logs\nEnvironment variables: REDIS_HOST, JWT_SECRET, TOKEN_FAILURE_RATE"
+    },
+    {
+      "name": "Account Service",
+      "container": "fintech-account-service",
+      "description": "This node is installed on the Account Service server for a FinTech banking platform. This is a Node.js/Express application running on port 3002 that manages customer bank accounts and balances.\n\nResponsibilities:\n- Account CRUD operations\n- Balance inquiries\n- Account listing\n- Database operations with PostgreSQL\n\nCRITICAL: This service is prone to memory leaks and database connection exhaustion issues.\n\nUse this node to investigate:\n- Memory leak issues (check /health endpoint for memoryLeakedMB)\n- Database connection exhaustion (\"too many connections\" errors)\n- Slow balance queries\n- High memory usage (RSS growing over time)\n- PostgreSQL connection pool issues\n- OOM (Out of Memory) crashes\n\nDependencies: PostgreSQL database\nKey commands: Check memory usage, PostgreSQL connections, application logs\nEnvironment variables: DATABASE_URL, ENABLE_MEMORY_LEAK, ENABLE_CONNECTION_LEAK"
+    },
+    {
+      "name": "Transaction Service",
+      "container": "fintech-transaction-service",
+      "description": "This node is installed on the Transaction Service server for a FinTech banking platform. This is a Node.js/Express application running on port 3003 that orchestrates money transfers and payment processing.\n\nResponsibilities:\n- Processing money transfers between accounts\n- Coordinating with Fraud Detection for risk scoring\n- Coordinating with Payment Processor for external payments\n- Publishing notifications to RabbitMQ\n- Transaction history management\n\nCRITICAL: This service can experience cascading timeout failures when downstream services (Fraud Detection, Payment Processor) are slow.\n\nUse this node to investigate:\n- 504 Gateway Timeout errors on transfers\n- Cascading failures from slow downstream services\n- Transaction stuck in \"pending\" state\n- RabbitMQ publishing failures\n- Timeout configurations\n\nDependencies: PostgreSQL, Fraud Detection Service, Payment Processor, RabbitMQ\nKey commands: Check downstream service latency, inspect transaction logs, verify RabbitMQ connection\nEnvironment variables: FRAUD_SERVICE_URL, PAYMENT_SERVICE_URL, REQUEST_TIMEOUT"
+    },
+    {
+      "name": "Fraud Detection",
+      "container": "fintech-fraud-detection",
+      "description": "This node is installed on the Fraud Detection server for a FinTech banking platform. This is a Python/FastAPI application running on port 3004 that provides ML-based fraud scoring for transactions.\n\nResponsibilities:\n- Real-time fraud risk scoring\n- Transaction pattern analysis\n- Risk threshold evaluation\n- Blocking suspicious transactions\n\nCRITICAL: This service can introduce latency that causes upstream timeout failures.\n\nUse this node to investigate:\n- Slow fraud scoring responses (check SLOW_SCORING_ENABLED)\n- High latency causing transaction timeouts\n- False positive/negative fraud detection\n- ML model performance issues\n- Python process crashes\n\nDependencies: None (standalone scoring service)\nKey commands: Check scoring latency, inspect FastAPI logs, verify Python process\nEnvironment variables: SLOW_SCORING_ENABLED, SCORING_DELAY_MS\nHealth endpoint: /health shows issues.slowScoringEnabled and scoringDelayMs"
+    },
+    {
+      "name": "Notification Service",
+      "container": "fintech-notification-service",
+      "description": "This node is installed on the Notification Service server for a FinTech banking platform. This is a Node.js/Express application running on port 3005 that consumes messages from RabbitMQ and sends notifications to customers.\n\nResponsibilities:\n- Consuming notification messages from RabbitMQ queue\n- Sending email/SMS/push notifications\n- Processing transaction alerts\n- Handling notification delivery status\n\nCRITICAL: This service can develop message queue backlogs when processing is slow.\n\nUse this node to investigate:\n- Growing RabbitMQ queue backlog\n- Delayed notifications\n- Slow message consumption (check SLOW_CONSUMER_ENABLED)\n- RabbitMQ connection issues\n- Memory pressure from queue growth\n- Notification delivery failures\n\nDependencies: RabbitMQ\nKey commands: Check RabbitMQ queue depth, inspect consumer logs, verify message processing rate\nEnvironment variables: RABBITMQ_URL, SLOW_CONSUMER_ENABLED, CONSUMER_DELAY_MS"
+    },
+    {
+      "name": "Payment Processor",
+      "container": "fintech-payment-processor",
+      "description": "This node is installed on the Payment Processor server for a FinTech banking platform. This is a Node.js/Express application running on port 3006 that simulates external bank payment processing.\n\nResponsibilities:\n- Processing external bank transfers\n- Simulating payment gateway responses\n- Handling payment success/failure scenarios\n- Managing payment retry logic\n\nCRITICAL: This service can experience slowdowns and random failures that affect transaction processing.\n\nUse this node to investigate:\n- Payment processing failures (check failure rate)\n- Slow payment responses causing upstream timeouts\n- High payment latency (5+ seconds)\n- Payment success rate degradation\n- External payment gateway simulation issues\n\nDependencies: None (simulates external payment provider)\nKey commands: Check payment success rate, inspect payment logs, verify response latency\nEnvironment variables: PAYMENT_FAILURE_RATE, PAYMENT_DELAY_MS, SLOW_PAYMENTS_ENABLED\nHealth endpoint: /health shows issues.slowPaymentsEnabled, paymentDelayMs, failureRate"
+    }
+  ]
+}
