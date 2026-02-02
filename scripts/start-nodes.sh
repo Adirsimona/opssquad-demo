@@ -42,32 +42,29 @@ for CONTAINER in $CONTAINERS; do
         continue
     fi
 
-    # Check if node is already running
-    if docker exec "$CONTAINER" pgrep -f opssquad-connectivity-layer > /dev/null 2>&1; then
-        echo -e "${BLUE}●${NC} $CONTAINER: Node already running"
-        ((ALREADY_RUNNING++))
-        continue
-    fi
-
-    # Try to start node
+    # Try to start node using CLI
     RESULT=$(docker exec "$CONTAINER" bash -c '
-        NODE_BINARY="$HOME/.local/lib/opssquad/opssquad-connectivity-layer"
-        NODE_CONFIG="$HOME/.config/opssquad/node.yaml"
+        export PATH="$HOME/.local/bin:$PATH"
 
-        if [ ! -f "$NODE_BINARY" ]; then
+        # Check if CLI is installed
+        if ! command -v opssquad &> /dev/null; then
             echo "NOT_INSTALLED"
             exit 1
         fi
 
-        if [ ! -f "$NODE_CONFIG" ]; then
-            echo "NO_CONFIG"
-            exit 1
+        # Check if already running
+        if opssquad node status 2>/dev/null | grep -q "RUNNING"; then
+            echo "ALREADY_RUNNING"
+            exit 0
         fi
 
-        nohup "$NODE_BINARY" --config "$NODE_CONFIG" > /var/log/opssquad-connectivity-layer.log 2>&1 &
+        # Start the node
+        opssquad node start 2>/dev/null
+
         sleep 2
 
-        if pgrep -f opssquad-connectivity-layer > /dev/null; then
+        # Verify it started
+        if opssquad node status 2>/dev/null | grep -q "RUNNING"; then
             echo "STARTED"
         else
             echo "FAILED"
@@ -79,12 +76,12 @@ for CONTAINER in $CONTAINERS; do
             echo -e "${GREEN}✓${NC} $CONTAINER: Node started"
             ((STARTED++))
             ;;
-        NOT_INSTALLED)
-            echo -e "${RED}✗${NC} $CONTAINER: Node not installed"
-            ((FAILED++))
+        ALREADY_RUNNING)
+            echo -e "${BLUE}●${NC} $CONTAINER: Node already running"
+            ((ALREADY_RUNNING++))
             ;;
-        NO_CONFIG)
-            echo -e "${RED}✗${NC} $CONTAINER: Node config missing"
+        NOT_INSTALLED)
+            echo -e "${RED}✗${NC} $CONTAINER: Node not installed (run install-nodes.sh first)"
             ((FAILED++))
             ;;
         *)

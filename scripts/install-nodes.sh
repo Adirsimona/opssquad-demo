@@ -110,52 +110,47 @@ jq -c '.nodes[]' "$CONFIG_FILE" | while read -r node; do
     INSTALL_OUTPUT=$(docker exec "$CONTAINER" bash -c "
         set -e
 
-        # Clean up previous installation
-        rm -rf \$HOME/.local/bin/opssquad \$HOME/.local/lib/opssquad \$HOME/.config/opssquad 2>/dev/null || true
-
-        # Download and install CLI
-        curl -fsSL https://install.opssquad.ai/install.sh 2>/dev/null | bash 2>/dev/null
-
-        # Add to PATH
+        # Add local bin to PATH
         export PATH=\"\$HOME/.local/bin:\$PATH\"
 
-        # Install node using CLI (--token flag, not --api-key)
-        \$HOME/.local/bin/opssquad node install --node-id=\"$NODE_ID\" --token=\"$TOKEN\" 2>/dev/null
+        # Check if already installed and running
+        if command -v opssquad &> /dev/null && opssquad node status 2>/dev/null | grep -q 'RUNNING'; then
+            echo 'ALREADY_RUNNING'
+            exit 0
+        fi
 
-        # Start node in background (binary name is opssquad-connectivity-layer)
-        NODE_BINARY=\"\$HOME/.local/lib/opssquad/opssquad-connectivity-layer\"
-        NODE_CONFIG=\"\$HOME/.config/opssquad/node.yaml\"
+        # Clean up previous installation
+        pkill -f opssquad-connectivity-layer 2>/dev/null || true
+        rm -rf \$HOME/.local/bin/opssquad \$HOME/.local/lib/opssquad \$HOME/.config/opssquad 2>/dev/null || true
 
-        if [ -f \"\$NODE_BINARY\" ] && [ -f \"\$NODE_CONFIG\" ]; then
-            # Kill any existing node
-            pkill -f opssquad-connectivity-layer 2>/dev/null || true
-            sleep 1
+        # Step 1: Install the OpsSquad CLI
+        curl -fsSL https://install.opssquad.ai/install.sh 2>/dev/null | bash 2>/dev/null
 
-            # Start new node
-            nohup \"\$NODE_BINARY\" --config \"\$NODE_CONFIG\" > /var/log/opssquad-node.log 2>&1 &
-            sleep 2
+        # Step 2: Install the node with credentials
+        \$HOME/.local/bin/opssquad node install --node-id=\"$NODE_ID\" --token=\"$TOKEN\"
 
-            # Verify it's running
-            if pgrep -f opssquad-connectivity-layer > /dev/null; then
-                echo 'SUCCESS'
-            else
-                echo 'NODE_START_FAILED'
-            fi
+        # Step 3: Start the node
+        \$HOME/.local/bin/opssquad node start
+
+        # Step 4: Verify status
+        sleep 2
+        if \$HOME/.local/bin/opssquad node status 2>/dev/null | grep -q 'RUNNING'; then
+            echo 'SUCCESS'
         else
-            echo 'BINARY_NOT_FOUND'
+            echo 'NODE_START_FAILED'
         fi
     " 2>&1)
 
     # Check result
     if echo "$INSTALL_OUTPUT" | grep -q "SUCCESS"; then
         echo -e "\r${GREEN}✓${NC} $NAME ($CONTAINER): Node installed and running      "
+    elif echo "$INSTALL_OUTPUT" | grep -q "ALREADY_RUNNING"; then
+        echo -e "\r${BLUE}●${NC} $NAME ($CONTAINER): Node already running            "
     elif echo "$INSTALL_OUTPUT" | grep -q "NODE_START_FAILED"; then
         echo -e "\r${RED}✗${NC} $NAME ($CONTAINER): Node installed but failed to start"
-    elif echo "$INSTALL_OUTPUT" | grep -q "BINARY_NOT_FOUND"; then
-        echo -e "\r${RED}✗${NC} $NAME ($CONTAINER): CLI installed but node binary not found"
     else
         echo -e "\r${RED}✗${NC} $NAME ($CONTAINER): Installation failed"
-        echo "    Error: $(echo "$INSTALL_OUTPUT" | tail -1)"
+        echo "    Error: $(echo "$INSTALL_OUTPUT" | tail -3)"
     fi
 done
 

@@ -40,15 +40,41 @@ for CONTAINER in $CONTAINERS; do
         continue
     fi
 
-    # Check if node is running
-    if docker exec "$CONTAINER" pgrep -f opssquad-connectivity-layer > /dev/null 2>&1; then
-        docker exec "$CONTAINER" pkill -f opssquad-connectivity-layer 2>/dev/null
-        echo -e "${GREEN}✓${NC} $CONTAINER: Node stopped"
-        ((STOPPED++))
-    else
-        echo -e "${YELLOW}●${NC} $CONTAINER: Node not running"
-        ((NOT_RUNNING++))
-    fi
+    # Stop node using CLI
+    RESULT=$(docker exec "$CONTAINER" bash -c '
+        export PATH="$HOME/.local/bin:$PATH"
+
+        # Check if CLI is installed
+        if ! command -v opssquad &> /dev/null; then
+            echo "NOT_INSTALLED"
+            exit 0
+        fi
+
+        # Check if running
+        if ! opssquad node status 2>/dev/null | grep -q "RUNNING"; then
+            echo "NOT_RUNNING"
+            exit 0
+        fi
+
+        # Stop the node
+        opssquad node stop 2>/dev/null
+        echo "STOPPED"
+    ' 2>/dev/null)
+
+    case "$RESULT" in
+        STOPPED)
+            echo -e "${GREEN}✓${NC} $CONTAINER: Node stopped"
+            ((STOPPED++))
+            ;;
+        NOT_RUNNING)
+            echo -e "${YELLOW}●${NC} $CONTAINER: Node not running"
+            ((NOT_RUNNING++))
+            ;;
+        NOT_INSTALLED)
+            echo -e "${YELLOW}●${NC} $CONTAINER: Node not installed"
+            ((NOT_RUNNING++))
+            ;;
+    esac
 done
 
 echo ""

@@ -48,12 +48,28 @@ for CONTAINER in $CONTAINERS; do
         continue
     fi
 
-    # Check node status
+    # Check node status using CLI
     STATUS=$(docker exec "$CONTAINER" bash -c '
-        if pgrep -f opssquad-connectivity-layer > /dev/null 2>&1; then
-            PID=$(pgrep -f opssquad-connectivity-layer | head -1)
-            # Get uptime (works on Linux)
-            if [ -f "/proc/$PID/stat" ]; then
+        export PATH="$HOME/.local/bin:$PATH"
+
+        # Check if CLI is installed
+        if ! command -v opssquad &> /dev/null; then
+            echo "NOT_INSTALLED|-|-"
+            exit 0
+        fi
+
+        # Get status from CLI
+        CLI_STATUS=$(opssquad node status 2>/dev/null)
+
+        if echo "$CLI_STATUS" | grep -q "RUNNING"; then
+            # Try to get PID
+            PID=$(pgrep -f opssquad-connectivity-layer 2>/dev/null | head -1)
+            if [ -z "$PID" ]; then
+                PID="-"
+            fi
+
+            # Try to get uptime
+            if [ "$PID" != "-" ] && [ -f "/proc/$PID/stat" ]; then
                 START_TIME=$(stat -c %Y /proc/$PID 2>/dev/null || echo "0")
                 NOW=$(date +%s)
                 UPTIME=$((NOW - START_TIME))
@@ -65,13 +81,13 @@ for CONTAINER in $CONTAINERS; do
                     UPTIME_STR="${UPTIME}s"
                 fi
             else
-                UPTIME_STR="unknown"
+                UPTIME_STR="-"
             fi
             echo "RUNNING|$PID|$UPTIME_STR"
-        elif [ -f "$HOME/.local/bin/opssquad" ]; then
+        elif echo "$CLI_STATUS" | grep -q "STOPPED"; then
             echo "STOPPED|-|-"
         else
-            echo "NOT_INSTALLED|-|-"
+            echo "STOPPED|-|-"
         fi
     ' 2>/dev/null)
 

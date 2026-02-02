@@ -40,22 +40,29 @@ for CONTAINER in $CONTAINERS; do
         continue
     fi
 
-    # Uninstall node
+    # Uninstall node using CLI
     RESULT=$(docker exec "$CONTAINER" bash -c '
-        # Stop node if running
-        pkill -f opssquad-connectivity-layer 2>/dev/null || true
+        export PATH="$HOME/.local/bin:$PATH"
 
-        # Check if installed
-        if [ -d "$HOME/.local/bin" ] && [ -f "$HOME/.local/bin/opssquad" ]; then
-            # Remove all OpsSquad files
-            rm -rf "$HOME/.local/bin/opssquad" 2>/dev/null
-            rm -rf "$HOME/.local/lib/opssquad" 2>/dev/null
-            rm -rf "$HOME/.config/opssquad" 2>/dev/null
-            rm -f /var/log/opssquad-connectivity-layer.log 2>/dev/null
-            echo "UNINSTALLED"
-        else
+        # Check if CLI is installed
+        if ! command -v opssquad &> /dev/null; then
             echo "NOT_INSTALLED"
+            exit 0
         fi
+
+        # Stop node if running
+        opssquad node stop 2>/dev/null || true
+
+        # Uninstall node
+        opssquad node uninstall 2>/dev/null || true
+
+        # Clean up CLI and remaining files
+        rm -rf "$HOME/.local/bin/opssquad" 2>/dev/null
+        rm -rf "$HOME/.local/lib/opssquad" 2>/dev/null
+        rm -rf "$HOME/.config/opssquad" 2>/dev/null
+        rm -f /var/log/opssquad-node.log 2>/dev/null
+
+        echo "UNINSTALLED"
     ' 2>/dev/null)
 
     case "$RESULT" in
